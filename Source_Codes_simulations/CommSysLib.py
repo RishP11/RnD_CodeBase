@@ -1,21 +1,20 @@
 # Required dependencies 
 import numpy as np
-import scipy
-import matplotlib.pyplot as plt
 import itertools
 
-# Created by RISHABH POMAJE for the paper #Learning to communicate over fading channels#
-# Alias used is "csl" while importing
 """
-This script defines various functions defined which are to be used as black boxes to simulate a chain of actual digital 
-communication system (wired/ wireless) and analyse its various aspects such as bit error rate, symbol error rate,
-studying impacts of various modulation and coding schemes. The most used data structure is np.ndarray since there 
-is a lot of efficient calculations available from NumPy. 
+---------------------------------------------------------------------------------------------------------------------
+Created by RISHABH POMAJE for the paper #__Learning to communicate over fading channels__#
+Alias used while importing is "csl".
+
+This script defines various functions which are to be used as black boxes to simulate a chain of actual digital 
+communication system (wired/ wireless) and analyse its various aspects such as 
+1. error rates, 
+2. studying impacts of various modulation and coding schemes. 
+The most used data structure is np.ndarray since there is a lot of efficient calculations available from NumPy
+and is the preferred choice of data structure. 
+---------------------------------------------------------------------------------------------------------------------
 """
-
-def qfunc(x) :
-    return 0.5 * scipy.special.erfc(x / np.sqrt(2))
-
 #
 # Functions to be used at the transmitter
 #
@@ -149,7 +148,41 @@ def square_law_detector(rx_signal):
     estimated_message = np.where(np.abs(rx_signal_reshaped[:, 0]) > np.abs(rx_signal_reshaped[:, 1]), 0, 1)
 
     return estimated_message
+import numpy as np
 
+def mrc_decoding(input_stream, csi):
+    """
+    Perform Maximal Ratio Combining (MRC) on received complex symbols.
+
+    MRC is a diversity combining technique used in wireless communication systems
+    to maximize the received signal-to-noise ratio (SNR) by weighting and combining
+    signals received from multiple antennas.
+
+    Args:
+        input_stream (tuple): A tuple containing two arrays of received complex symbols.
+            Each array corresponds to the received symbols from one of the antennas.
+        csi (tuple): A tuple containing two arrays of channel state information (CSI).
+            Each array represents the fading coefficients for one of the antennas.
+
+    Returns:
+        np.ndarray: An array of demodulated symbols after MRC.
+
+    Notes:
+        This implementation assumes a 1x2 MIMO (Multiple-Input Multiple-Output) system,
+        where there are two antennas at the receiver.
+    """
+    signal_01, signal_02 = input_stream
+    fade_taps_01, fade_taps_02 = csi
+
+    combined_symbols = []
+    # Combine fading taps and signals
+    for i in range(len(signal_01)):
+        combined_symbols.append(np.conjugate(np.array([fade_taps_01[i], fade_taps_02[i]])) @ np.array([signal_01[i], signal_02[i]]))
+
+    # Demodulate symbols
+    demodulated_symbols = BPSK_demapper(combined_symbols)
+
+    return demodulated_symbols.flatten()
 
 def hamming_decoder(rx_stream, parity_chk_matrix):
     """
